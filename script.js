@@ -235,14 +235,151 @@ function updatePreview() {
     }).join('');
 }
 
+function generateFormHTML(formConfig) {
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${formConfig.title}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="container mx-auto max-w-2xl">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h1 class="text-2xl font-bold mb-4">${formConfig.title}</h1>
+            <p class="text-gray-600 mb-6">${formConfig.description}</p>
+            
+            <form id="dynamicForm" class="space-y-6" onsubmit="handleSubmit(event)">
+                ${formConfig.fields.map(field => {
+                    const requiredMark = field.required ? '<span class="text-red-500 ml-1">*</span>' : '';
+                    let inputHtml = '';
+
+                    switch (field.type) {
+                        case 'textarea':
+                            inputHtml = `
+                                <textarea 
+                                    name="${field.id}"
+                                    placeholder="${field.placeholder}"
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    ${field.required ? 'required' : ''}
+                                ></textarea>
+                            `;
+                            break;
+                        case 'select':
+                            inputHtml = `
+                                <select 
+                                    name="${field.id}"
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    ${field.required ? 'required' : ''}
+                                >
+                                    <option value="">${field.placeholder}</option>
+                                    ${field.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                                </select>
+                            `;
+                            break;
+                        case 'radio':
+                            inputHtml = field.options.map(opt => `
+                                <div class="flex items-center space-x-2">
+                                    <input 
+                                        type="radio" 
+                                        name="${field.id}" 
+                                        value="${opt}"
+                                        ${field.required ? 'required' : ''}
+                                        class="text-blue-600 focus:ring-blue-500"
+                                    >
+                                    <label class="text-gray-700">${opt}</label>
+                                </div>
+                            `).join('');
+                            break;
+                        case 'checkbox':
+                            inputHtml = field.options.map(opt => `
+                                <div class="flex items-center space-x-2">
+                                    <input 
+                                        type="checkbox" 
+                                        name="${field.id}" 
+                                        value="${opt}"
+                                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    >
+                                    <label class="text-gray-700">${opt}</label>
+                                </div>
+                            `).join('');
+                            break;
+                        default:
+                            inputHtml = `
+                                <input 
+                                    type="${field.type}"
+                                    name="${field.id}"
+                                    placeholder="${field.placeholder}"
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    ${field.required ? 'required' : ''}
+                                >
+                            `;
+                    }
+
+                    return `
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">
+                                ${field.label}${requiredMark}
+                            </label>
+                            ${inputHtml}
+                        </div>
+                    `;
+                }).join('')}
+                
+                <button 
+                    type="submit"
+                    class="w-full bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                    Enviar
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    function handleSubmit(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const data = {};
+        
+        for (let [key, value] of formData.entries()) {
+            if (data[key]) {
+                if (!Array.isArray(data[key])) {
+                    data[key] = [data[key]];
+                }
+                data[key].push(value);
+            } else {
+                data[key] = value;
+            }
+        }
+        
+        console.log('Datos del formulario:', data);
+        alert('Formulario enviado con éxito!');
+    }
+    </script>
+</body>
+</html>`;
+}
+
+function downloadHTML(filename, content) {
+    const element = document.createElement('a');
+    element.setAttribute('href', 'data:text/html;charset=utf-8,' + encodeURIComponent(content));
+    element.setAttribute('download', filename);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+}
+
 function createForm() {
     if (!formState.title || formState.fields.length === 0) {
         alert('Por favor, agrega un título y al menos un campo');
         return;
     }
 
-    // Aquí puedes implementar la lógica para guardar el formulario
-    console.log('Formulario creado:', formState);
-    alert('¡Formulario creado con éxito!');
+    const htmlContent = generateFormHTML(formState);
+    const filename = `${formState.title.toLowerCase().replace(/\s+/g, '-')}-form.html`;
+    
+    downloadHTML(filename, htmlContent);
 }
-
